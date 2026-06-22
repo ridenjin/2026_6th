@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<!-- saved from url=(0052)https://naraessam6262.github.io/narae-g/teacher.html -->
+<html lang="ko"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가람국 인생게임 — 선생님</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&display=swap');
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080812; --card: #10101e; --border: #22223a;
+    --accent: #e8b86d; --accent2: #7c6af0;
+    --freedom: #5ce0a0; --state: #5cb8e0; --equal: #e8b86d;
+    --text: #f0ede8; --muted: #6a6a8a;
+  }
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 20px;
+  }
+
+  /* ── 최상단 헤더 ── */
+  .top-bar {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 12px;
+  }
+  .top-bar h1 { font-size: 20px; font-weight: 900; }
+  .top-bar h1 span { color: var(--accent); }
+  .scene-indicator {
+    font-size: 13px; color: var(--muted);
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 20px; padding: 5px 14px;
+  }
+
+  /* ── 진행 바 ── */
+  .progress-row { display: flex; gap: 6px; margin-bottom: 16px; }
+  .pdot { flex: 1; height: 4px; border-radius: 2px; background: var(--border); transition: background 0.4s; }
+  .pdot.done   { background: var(--accent); }
+  .pdot.active { background: var(--accent2); }
+
+  /* ── 메인 3단 그리드 ── */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 320px 1fr 300px;
+    gap: 20px;
+    align-items: start;
+    padding: 0 12px;
+  }
+
+  /* ── 왼쪽: 이미지 ── */
+  .image-panel {
+    border-radius: 14px;
+    overflow: hidden;
+    background: var(--card);
+    border: 1px solid var(--border);
+    height: 600px;
+  }
+  .image-panel img {
+    width: 100%; height: 100%;
+    object-fit: cover; display: block;
+    filter: brightness(0.88);
+  }
+
+  /* ── 가운데: 장면 텍스트 + 선택 결과 ── */
+  .scene-panel {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 28px 32px;
+    max-width: 680px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .scene-num { font-size: 10px; letter-spacing: 2px; color: var(--accent2); margin-bottom: 6px; }
+  .scene-title { font-size: 22px; font-weight: 900; margin-bottom: 10px; }
+  .scene-story { font-size: 14px; line-height: 1.8; color: #ccc; margin-bottom: 12px; }
+  .speech-bubble {
+    background: #0c0c1e; border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0; padding: 14px 16px;
+    font-size: 14px; line-height: 1.9; color: var(--accent);
+    font-style: italic; margin-bottom: 20px;
+  }
+  .choice-results { display: flex; flex-direction: column; gap: 10px; }
+  .choice-row { display: flex; align-items: center; gap: 10px; }
+  .choice-label {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--border); color: var(--muted);
+    font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .choice-text { font-size: 13px; color: #bbb; flex: 1; }
+  .choice-bar-wrap { width: 120px; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; flex-shrink: 0; }
+  .choice-bar { height: 100%; background: var(--accent2); border-radius: 4px; transition: width 0.6s ease; }
+  .choice-count { font-size: 13px; font-weight: 700; width: 32px; text-align: right; flex-shrink: 0; }
+
+  /* ── 오른쪽: 점수 + 버튼 ── */
+  .right-panel { display: flex; flex-direction: column; gap: 12px; }
+
+  .participants-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px; text-align: center;
+  }
+  .participants-card .label { font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 6px; }
+  .participants-card .count { font-size: 44px; font-weight: 900; color: var(--accent); line-height: 1; }
+  .participants-card .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+  .scores-card {
+    background: var(--card); border: 1px solid var(--border);
+    border-radius: 14px; padding: 18px;
+  }
+  .scores-card .label { font-size: 10px; letter-spacing: 2px; color: var(--muted); margin-bottom: 12px; }
+  .scores-hidden { text-align: center; padding: 12px 0; color: var(--muted); font-size: 13px; line-height: 1.7; }
+  .scores-hidden .lock { font-size: 26px; margin-bottom: 6px; }
+  .scores-body { display: none; }
+  .scores-body.revealed { display: block; }
+  .score-row { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .score-name { font-size: 12px; font-weight: 700; width: 56px; }
+  .score-name.freedom { color: var(--freedom); }
+  .score-name.state  { color: var(--state); }
+  .score-name.equal   { color: var(--equal); }
+  .score-bar-wrap { flex: 1; height: 10px; background: var(--border); border-radius: 5px; overflow: hidden; }
+  .score-bar { height: 100%; border-radius: 5px; transition: width 0.6s ease; }
+  .score-bar.freedom { background: var(--freedom); }
+  .score-bar.state  { background: var(--state); }
+  .score-bar.equal   { background: var(--equal); }
+  .score-val { font-size: 13px; font-weight: 700; width: 32px; text-align: right; }
+
+  .controls { display: flex; flex-direction: column; gap: 8px; }
+  .ctrl-btn {
+    padding: 13px; border: none; border-radius: 12px;
+    font-size: 14px; font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700; cursor: pointer; transition: all 0.2s;
+  }
+  .ctrl-btn.reveal   { background: #1a2a1a; color: var(--freedom); border: 1.5px solid var(--freedom); }
+  .ctrl-btn.reveal:hover { background: #243424; }
+  .ctrl-btn.reveal.done { opacity: 0.6; cursor: default; }
+  .ctrl-btn.next   { background: var(--accent2); color: #fff; }
+  .ctrl-btn.next:hover { background: #9580ff; }
+  .ctrl-btn.result { background: var(--accent); color: #000; }
+  .ctrl-btn.result:hover { background: #f0c87d; }
+  .ctrl-btn.reset  { background: var(--border); color: var(--muted); }
+  .ctrl-btn.reset:hover { background: #2a2a4a; color: #fff; }
+
+  /* ── 인트로 화면 ── */
+  .intro-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: #080812;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    text-align: center;
+    transition: opacity 0.8s ease;
+  }
+  .intro-overlay.fadeout { opacity: 0; pointer-events: none; }
+  .intro-overlay.hidden  { display: none; }
+  .intro-logo { font-size: 72px; margin-bottom: 16px; animation: float 3s ease-in-out infinite; }
+  @keyframes float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+  .intro-sub  { font-size: 14px; letter-spacing: 4px; color: #7c6af0; margin-bottom: 12px; }
+  .intro-title { font-size: 48px; font-weight: 900; color: #f0ede8; line-height: 1.2; margin-bottom: 8px; }
+  .intro-title span { color: #e8b86d; }
+  .intro-desc { font-size: 15px; color: #6a6a8a; margin-bottom: 48px; line-height: 1.8; }
+  .intro-btn {
+    padding: 18px 52px; background: #e8b86d; color: #000;
+    border: none; border-radius: 50px; font-size: 18px;
+    font-family: 'Noto Sans KR', sans-serif; font-weight: 900;
+    cursor: pointer; transition: all 0.2s;
+    box-shadow: 0 0 30px rgba(232,184,109,0.4);
+    animation: glow 2s ease-in-out infinite;
+  }
+  @keyframes glow { 0%,100%{box-shadow:0 0 20px rgba(232,184,109,0.3)} 50%{box-shadow:0 0 50px rgba(232,184,109,0.7)} }
+  .intro-btn:hover { transform: scale(1.05); }
+  .intro-music-label { margin-top: 20px; font-size: 12px; color: #3a3a5a; }
+
+  /* ── 결말 오버레이 ── */
+  .result-overlay {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.93); z-index: 100;
+    align-items: center; justify-content: center;
+    flex-direction: column; text-align: center; padding: 40px;
+  }
+  .result-overlay.visible { display: flex; }
+  .result-icon { font-size: 72px; margin-bottom: 20px; }
+  .result-title { font-size: 28px; font-weight: 900; margin-bottom: 14px; line-height: 1.4; white-space: pre-line; }
+  .result-scores { display: flex; gap: 14px; margin-bottom: 20px; }
+  .result-score-chip { padding: 8px 16px; border-radius: 30px; font-size: 14px; font-weight: 700; }
+  .result-score-chip.freedom { background: rgba(92,224,160,0.2); color: var(--freedom); }
+  .result-score-chip.state  { background: rgba(92,184,224,0.2); color: var(--state); }
+  .result-score-chip.equal   { background: rgba(232,184,109,0.2); color: var(--equal); }
+  .result-desc { font-size: 16px; line-height: 1.9; color: #bbb; max-width: 560px; margin-bottom: 22px; }
+  .result-question {
+    background: #1a1a30; border: 1.5px solid var(--accent2);
+    border-radius: 14px; padding: 18px 24px;
+    font-size: 17px; font-weight: 700; color: var(--accent2);
+    max-width: 560px; margin-bottom: 26px; line-height: 1.7; white-space: pre-line;
+  }
+  .close-result {
+    padding: 12px 28px; background: var(--border); color: var(--text);
+    border: none; border-radius: 12px; font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif; font-weight: 700; cursor: pointer;
+  }
+</style>
+</head>
+<body>
+
+<!-- ★ 인트로 오버레이 -->
+<div class="intro-overlay" id="introOverlay">
+  <div class="intro-logo">🏛️</div>
+  <div class="intro-sub">2026 · 가람반 주제 수업</div>
+  <div class="intro-title">가람국<br><span>인생게임</span></div>
+  <div class="intro-desc">나는 가람국의 국민입니다<br>나의 선택이 가람국의 미래를 바꿉니다</div>
+  <button class="intro-btn" onclick="startIntro()">▶ 게임 시작</button>
+  <div class="intro-music-label" id="musicLabel">🎵 음악 준비 중...</div>
+</div>
+
+<!-- 헤더 -->
+<div class="top-bar">
+  <h1>🏛️ 가람국 인생게임 <span>— 선생님 화면</span></h1>
+  <div class="scene-indicator" id="sceneIndicator">장면 1 / 5</div>
+</div>
+
+<!-- 진행 바 -->
+<div class="progress-row">
+  <div class="pdot" id="pd0"></div>
+  <div class="pdot" id="pd1"></div>
+  <div class="pdot" id="pd2"></div>
+  <div class="pdot" id="pd3"></div>
+  <div class="pdot" id="pd4"></div>
+</div>
+
+<!-- 3단 메인 -->
+<div class="main-grid">
+
+  <!-- 왼쪽: 이미지 -->
+  <div class="image-panel">
+    <img id="sceneImage" src="https://naraessam6262.github.io/narae-g/teacher.html" alt="">
+  </div>
+
+  <!-- 가운데: 장면 텍스트 -->
+  <div class="scene-panel">
+    <div class="scene-num" id="sceneNum">장면 1 / 5</div>
+    <div class="scene-title" id="sceneTitle"></div>
+    <div class="scene-story" id="sceneStory"></div>
+    <div class="speech-bubble" id="sceneSpeech"></div>
+    <div class="choice-results" id="choiceResults"></div>
+  </div>
+
+  <!-- 오른쪽: 점수 + 버튼 -->
+  <div class="right-panel">
+
+    <div class="participants-card">
+      <div class="label">THIS SCENE · RESPONSES</div>
+      <div class="count" id="responseCount">0</div>
+      <div class="sub">명 응답 완료</div>
+    </div>
+
+    <div class="scores-card">
+      <div class="label">TOTAL · 가람국 지수</div>
+      <div class="scores-hidden" id="scoresHidden">
+        <div class="lock">🔒</div>
+        아직 공개 전입니다<br>
+        <small>결과 공개 버튼을 누르세요</small>
+      </div>
+      <div class="scores-body" id="scoresBody">
+        <div class="score-row">
+          <div class="score-name freedom">🗽 자유</div>
+          <div class="score-bar-wrap"><div class="score-bar freedom" id="barFreedom" style="width:50%"></div></div>
+          <div class="score-val" id="valFreedom">0</div>
+        </div>
+        <div class="score-row">
+          <div class="score-name state">🏛️ 국가질서</div>
+          <div class="score-bar-wrap"><div class="score-bar state" id="barState" style="width:50%"></div></div>
+          <div class="score-val" id="valState">0</div>
+        </div>
+        <div class="score-row">
+          <div class="score-name equal">⚖️ 평등</div>
+          <div class="score-bar-wrap"><div class="score-bar equal" id="barEqual" style="width:50%"></div></div>
+          <div class="score-val" id="valEqual">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="ctrl-btn reveal" id="revealBtn" onclick="revealScores()">📊 이번 장면 결과 공개</button>
+      <button class="ctrl-btn next" id="nextBtn" onclick="nextScene()">다음 장면으로 →</button>
+      <button class="ctrl-btn result" id="resultBtn" onclick="showResult()" style="display:none">🏁 결말 보기</button>
+      <button class="ctrl-btn reset" onclick="resetGame()">↺ 게임 초기화</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- 결말 오버레이 -->
+<div class="result-overlay" id="resultOverlay">
+  <div class="result-icon" id="resultIcon"></div>
+  <div class="result-title" id="resultTitle"></div>
+  <div class="result-scores" id="resultScores"></div>
+  <div class="result-desc" id="resultDesc"></div>
+  <div class="result-question" id="resultQuestion"></div>
+  <button class="close-result" onclick="document.getElementById(&#39;resultOverlay&#39;).classList.remove(&#39;visible&#39;)">닫기</button>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, remove } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyARGsd0fSm2WHTKbzZQ7STlXFxKKIqaUCE",
+  authDomain: "garam-game-69bde.firebaseapp.com",
+  databaseURL: "https://garam-game-69bde-default-rtdb.firebaseio.com",
+  projectId: "garam-game-69bde",
+  storageBucket: "garam-game-69bde.firebasestorage.app",
+  messagingSenderId: "863206321915",
+  appId: "1:863206321915:web:b225f9c25814f8ef5b0a5e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ── ★ 사운드 시스템 (Web Audio API) ──────────────────────
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+let bgmGain = null;
+let bgmPlaying = false;
+
+function getAudioCtx() {
+  if (!audioCtx) audioCtx = new AudioCtx();
+  return audioCtx;
+}
+
+// 클릭 효과음 — 밝고 경쾌한 톤
+function playClick() {
+  try {
+    const ctx = getAudioCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.setValueAtTime(880, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.1);
+    g.gain.setValueAtTime(0.3, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+    o.start(); o.stop(ctx.currentTime + 0.15);
+  } catch(e) {}
+}
+
+// 결과 공개 효과음 — 드럼롤 느낌
+function playReveal() {
+  try {
+    const ctx = getAudioCtx();
+    [0, 0.05, 0.1, 0.15, 0.2].forEach((t, i) => {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.type = 'square';
+      o.frequency.value = 200 + i * 80;
+      g.gain.setValueAtTime(0.15, ctx.currentTime + t);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + t + 0.08);
+      o.start(ctx.currentTime + t);
+      o.stop(ctx.currentTime + t + 0.1);
+    });
+    // 마지막 팡파레
+    setTimeout(() => {
+      [523, 659, 784].forEach((freq, i) => {
+        const o = ctx.createOscillator();
+        const g = ctx.createGain();
+        o.connect(g); g.connect(ctx.destination);
+        o.frequency.value = freq;
+        g.gain.setValueAtTime(0.2, ctx.currentTime + i * 0.07);
+        g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.07 + 0.3);
+        o.start(ctx.currentTime + i * 0.07);
+        o.stop(ctx.currentTime + i * 0.07 + 0.3);
+      });
+    }, 350);
+  } catch(e) {}
+}
+
+// 다음 장면 효과음 — 슉 하는 전환음
+function playNext() {
+  try {
+    const ctx = getAudioCtx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g); g.connect(ctx.destination);
+    o.frequency.setValueAtTime(300, ctx.currentTime);
+    o.frequency.exponentialRampToValueAtTime(600, ctx.currentTime + 0.2);
+    g.gain.setValueAtTime(0.2, ctx.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+    o.start(); o.stop(ctx.currentTime + 0.2);
+  } catch(e) {}
+}
+
+// BGM — 긴장감 있는 반복 멜로디
+function startBGM() {
+  if (bgmPlaying) return;
+  try {
+    const ctx = getAudioCtx();
+    bgmGain = ctx.createGain();
+    bgmGain.gain.value = 0.08;
+    bgmGain.connect(ctx.destination);
+
+    const notes = [220, 246, 261, 220, 196, 220, 246, 261, 293, 261, 246, 220];
+    let step = 0;
+
+    function playNote() {
+      if (!bgmPlaying) return;
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.type = 'sine';
+      o.connect(g); g.connect(bgmGain);
+      o.frequency.value = notes[step % notes.length];
+      g.gain.setValueAtTime(0.6, ctx.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+      o.start(); o.stop(ctx.currentTime + 0.4);
+      step++;
+      setTimeout(playNote, 420);
+    }
+
+    bgmPlaying = true;
+    playNote();
+    document.getElementById('musicLabel').textContent = '🎵 배경음악 재생 중';
+  } catch(e) {}
+}
+
+function stopBGM() {
+  bgmPlaying = false;
+  if (bgmGain) { bgmGain.gain.value = 0; }
+}
+
+// ── ★ 인트로 시작 ────────────────────────────────────────
+window.startIntro = function() {
+  startBGM();
+  const overlay = document.getElementById('introOverlay');
+  overlay.classList.add('fadeout');
+  setTimeout(() => overlay.classList.add('hidden'), 800);
+  init();
+};
+
+// ── 장면별 Unsplash 이미지 (무료, 저작권 없음) ──────────────
+const SCENE_IMAGES = [
+  "scene1.png",
+  "scene2.png",
+  "scene3.png",
+  "scene4.png",
+  "scene5.png",
+];
+
+const SCENES = [
+  {
+    number: "장면 1", title: "강한의 약속",
+    story: "가람국에 새 지도자 '강한'이 당선됐습니다. 국민 70%의 지지를 받은 인기 있는 지도자예요.",
+    speech: "\"국민 여러분, 지금 가람국은 법을 만드는 곳, 나라 살림, 재판하는 곳이 따로따로라 서로 싸우느라 아무것도 못 하고 있습니다. 나쁜 사람이 잡혀도 기관끼리 책임을 미루다 풀려나요. 제가 직접 다 맡아서 빠르고 확실하게 해결하겠습니다. 저를 믿어주세요.\"",
+    question: "💬 나는 어떻게 반응할까?",
+    choices: [
+      { label: "A", text: "맞아, 빠르고 확실한 게 낫지. 믿어보자.", scores: { freedom: -1, state: 1, equal: 0 } },
+      { label: "B", text: "한 사람이 다 하면 나중에 문제가 생길 것 같아. 반대한다.", scores: { freedom: 1, state: 0, equal: 1 } }
+    ]
+  },
+  {
+    number: "장면 2", title: "질서를 위한 법",
+    story: "가람국에 범죄가 늘어나자 강한이 새 법을 만들었습니다. 그런데 내 친구가 이 법으로 이유도 모른 채 잡혀갔습니다.",
+    speech: "\"국민 여러분의 안전을 위해, 수상한 사람은 재판 없이 먼저 잡아둘 수 있는 법을 만들었습니다. 억울한 사람은 나중에 풀어드리면 됩니다. 나쁜 사람을 빨리 잡는 게 먼저 아닐까요?\"",
+    question: "💬 나는 어떻게 할까?",
+    choices: [
+      { label: "A", text: "나쁜 사람을 잡으려면 어쩔 수 없지. 나라 질서가 먼저야.", scores: { freedom: -1, state: 1, equal: -1 } },
+      { label: "B", text: "재판도 없이 잡아두는 건 말이 안 돼. 항의한다.", scores: { freedom: 1, state: -1, equal: 1 } }
+    ]
+  },
+  {
+    number: "장면 3", title: "재판을 받으러 갔다",
+    story: "항의했더니 오히려 나에게 벌금 고지서가 날아왔습니다. 재판을 신청했습니다.",
+    speech: "\"저도 강한 지도자가 임명했습니다. 강한 지도자는 국민 70%가 뽑은 분입니다. 그분의 판단이 곧 국민의 뜻 아닐까요? 벌금을 내세요.\"",
+    question: "💬 이 재판을 받아들일까?",
+    choices: [
+      { label: "A", text: "판사가 지도자 편이면 공정한 재판이 아니야. 계속 싸운다.", scores: { freedom: 1, state: -1, equal: 1 } },
+      { label: "B", text: "70%가 뽑은 지도자의 뜻이니 나라 질서를 따르겠다. 벌금을 낸다.", scores: { freedom: -1, state: 1, equal: -1 } }
+    ]
+  },
+  {
+    number: "장면 4", title: "강한의 호소",
+    story: "가람국 경제가 어려워졌습니다. 강한이 방송에 나와 말합니다.",
+    speech: "\"국민 여러분, 지금 가람국이 어려운 건 저를 반대하는 세력들이 발목을 잡기 때문입니다. 저를 믿고 조금만 더 참아주세요. 비판하는 목소리가 클수록 가람국은 더 힘들어집니다.\"",
+    question: "💬 나는 어떻게 생각할까?",
+    choices: [
+      { label: "A", text: "맞아, 지금은 나라가 하나로 뭉쳐야 할 때야. 비판을 멈춘다.", scores: { freedom: -1, state: 1, equal: -1 } },
+      { label: "B", text: "어려울수록 비판의 목소리가 필요해. 계속 말한다.", scores: { freedom: 1, state: -1, equal: 0 } },
+      { label: "C", text: "모르겠다. 일단 지켜본다.", scores: { freedom: 0, state: 0, equal: 0 } }
+    ]
+  },
+  {
+    number: "장면 5", title: "광장에 모인 국민들",
+    story: "말 한마디 잘못했다가 잡혀간 이웃, 이유도 모른 채 내야 하는 세금, 항의해도 바뀌는 게 없는 나날들... 드디어 많은 국민들이 광장에 모였습니다.",
+    speech: "\"여러분의 마음 압니다. 저도 답답합니다. 하지만 지금 이 문제들, 제가 다 해결할 수 있습니다. 조금만 더 믿어주세요. 대신 저에게 더 많은 권한을 주세요. 그러면 가람국을 반드시 바로잡겠습니다.\"",
+    question: "💬 나는 어떻게 할까?",
+    choices: [
+      { label: "A", text: "더 많은 권한을 주면 오히려 더 위험해져. 광장에 남는다.", scores: { freedom: 1, state: -1, equal: 1 } },
+      { label: "B", text: "지금 나라가 혼란스러우니 강한에게 권한을 주는 게 맞다.", scores: { freedom: -1, state: 1, equal: -1 } },
+      { label: "C", text: "광장엔 못 가지만 주변 사람들에게 조용히 알린다.", scores: { freedom: 1, state: 0, equal: 0 } }
+    ]
+  }
+];
+
+let currentScene = 0;
+let totalScores  = { freedom: 0, safety: 0, equal: 0 };
+let scoresRevealed = false;
+
+// ── 초기화 ────────────────────────────────────────────────
+async function init() {
+  const snap = await get(ref(db, 'game/currentScene'));
+  if (snap.val() === null) {
+    await set(ref(db, 'game/currentScene'), 0);
+    await set(ref(db, 'game/revealed'), false);
+  } else {
+    currentScene = Math.min(snap.val(), SCENES.length - 1);
+  }
+  renderScene(currentScene);
+  listenResponses();
+}
+
+// ── 장면 렌더링 ───────────────────────────────────────────
+function renderScene(idx) {
+  const s = SCENES[idx];
+  document.getElementById('sceneIndicator').textContent = `장면 ${idx + 1} / 5`;
+  document.getElementById('sceneNum').textContent   = `${s.number} / 5`;
+  document.getElementById('sceneTitle').textContent = s.title;
+  document.getElementById('sceneStory').textContent = s.story;
+  document.getElementById('sceneSpeech').textContent = s.speech;
+  document.getElementById('sceneImage').src = SCENE_IMAGES[idx];
+
+  // 선택 결과 행
+  const cr = document.getElementById('choiceResults');
+  cr.innerHTML = '';
+  s.choices.forEach(c => {
+    cr.innerHTML += `
+      <div class="choice-row">
+        <div class="choice-label">${c.label}</div>
+        <div class="choice-text">${c.text}</div>
+        <div class="choice-bar-wrap"><div class="choice-bar" id="bar_${c.label}" style="width:0%"></div></div>
+        <div class="choice-count" id="cnt_${c.label}">0명</div>
+      </div>`;
+  });
+
+  // 진행 바
+  for (let i = 0; i < 5; i++) {
+    document.getElementById(`pd${i}`).className =
+      'pdot' + (i < idx ? ' done' : i === idx ? ' active' : '');
+  }
+
+  // 버튼
+  const isLast = idx === SCENES.length - 1;
+  document.getElementById('nextBtn').style.display   = isLast ? 'none' : 'block';
+  document.getElementById('resultBtn').style.display = isLast ? 'block' : 'none';
+
+  // ★ 공개 상태 초기화
+  scoresRevealed = false;
+  document.getElementById('scoresHidden').style.display = 'block';
+  document.getElementById('scoresBody').classList.remove('revealed');
+  const rb = document.getElementById('revealBtn');
+  rb.textContent = '📊 이번 장면 결과 공개';
+  rb.classList.remove('done');
+}
+
+// ── 응답 실시간 감지 ──────────────────────────────────────
+function listenResponses() {
+  onValue(ref(db, 'game/responses'), (snap) => {
+    const data = snap.val() || {};
+    totalScores = { freedom: 0, state: 0, equal: 0 };
+
+    const sceneKey  = `scene${currentScene}`;
+    const sceneData = data[sceneKey] || {};
+    const counts    = {};
+    let total       = 0;
+
+    Object.values(sceneData).forEach(r => {
+      counts[r.choice] = (counts[r.choice] || 0) + 1;
+      total++;
+    });
+
+    Object.keys(data).forEach(sk => {
+      Object.values(data[sk]).forEach(r => {
+        totalScores.freedom += r.freedom || 0;
+        totalScores.state  += r.state  || 0;
+        totalScores.equal   += r.equal   || 0;
+      });
+    });
+
+    SCENES[currentScene].choices.forEach(c => {
+      const cnt = counts[c.label] || 0;
+      const pct = total > 0 ? Math.round(cnt / total * 100) : 0;
+      const barEl = document.getElementById(`bar_${c.label}`);
+      const cntEl = document.getElementById(`cnt_${c.label}`);
+      if (barEl) barEl.style.width = pct + '%';
+      if (cntEl) cntEl.textContent = cnt + '명';
+    });
+
+    document.getElementById('responseCount').textContent = total;
+    if (scoresRevealed) updateScoreBars();
+  });
+}
+
+function updateScoreBars() {
+  const f = totalScores.freedom;
+  const s = totalScores.state;
+  const e = totalScores.equal;
+  const max = Math.max(Math.abs(f), Math.abs(s), Math.abs(e), 1);
+
+  document.getElementById('valFreedom').textContent = (f > 0 ? '+' : '') + f;
+  document.getElementById('valState').textContent  = (s > 0 ? '+' : '') + s;
+  document.getElementById('valEqual').textContent   = (e > 0 ? '+' : '') + e;
+
+  document.getElementById('barFreedom').style.width = (50 + f / max * 45) + '%';
+  document.getElementById('barState').style.width  = (50 + s / max * 45) + '%';
+  document.getElementById('barEqual').style.width   = (50 + e / max * 45) + '%';
+}
+
+// ── ★ 결과 공개 버튼 ──────────────────────────────────────
+window.revealScores = async function() {
+  playReveal();
+  scoresRevealed = true;
+  document.getElementById('scoresHidden').style.display = 'none';
+  document.getElementById('scoresBody').classList.add('revealed');
+  updateScoreBars();
+
+  const rb = document.getElementById('revealBtn');
+  rb.textContent = '✅ 결과 공개됨';
+  rb.classList.add('done');
+
+  // Firebase에 공개 신호 → 학생 화면에 내 점수 표시
+  await set(ref(db, `game/revealed/scene${currentScene}`), true);
+};
+
+// ── 다음 장면 ─────────────────────────────────────────────
+window.nextScene = async function() {
+  playNext();
+  if (currentScene >= SCENES.length - 1) return;
+  currentScene++;
+  await set(ref(db, 'game/currentScene'), currentScene);
+  // 다음 장면 공개 상태 초기화
+  await set(ref(db, `game/revealed/scene${currentScene}`), false);
+  renderScene(currentScene);
+};
+
+// ── 결말 보기 ─────────────────────────────────────────────
+window.showResult = function() {
+  const democracyScore = totalScores.freedom + totalScores.equal;
+
+  document.getElementById('resultScores').innerHTML = `
+    <span class="result-score-chip freedom">🗽 자유 ${totalScores.freedom > 0 ? '+' : ''}${totalScores.freedom}</span>
+    <span class="result-score-chip state">🏛️ 국가질서 ${totalScores.state > 0 ? '+' : ''}${totalScores.state}</span>
+    <span class="result-score-chip equal">⚖️ 평등 ${totalScores.equal > 0 ? '+' : ''}${totalScores.equal}</span>
+  `;
+
+  if (democracyScore > 0) {
+    document.getElementById('resultIcon').textContent  = '🌅';
+    document.getElementById('resultTitle').textContent = '가람국 국민들이\n목소리를 냈습니다';
+    document.getElementById('resultDesc').textContent  =
+      '가람국에서 많은 국민들이 불편하고 두렵더라도 자신의 생각을 표현했습니다. 한 사람에게 모든 권한이 집중되는 것을 경계했고, 공정한 재판과 평등한 대우를 요구했습니다. 나래국은 민주주의를 향해 한 걸음씩 나아가고 있습니다.';
+    document.getElementById('resultQuestion').textContent =
+      '민주주의 나라가 되려면 무엇이 필요할까?\n권력을 나눠야 한다면, 어떻게 나눠야 할까?';
+  } else {
+    document.getElementById('resultIcon').textContent  = '🌑';
+    document.getElementById('resultTitle').textContent = '가람국은 점점\n조용해지고 있습니다';
+    document.getElementById('resultDesc').textContent  =
+      '가람국에서 많은 국민들이 안전을 위해 침묵을 선택했습니다. 하나 둘 목소리를 잃어가는 사이, 지도자 강한의 권한은 점점 커졌습니다. 재판도, 법도, 나라 살림도 모두 한 사람의 손에 들어갔습니다. 10년 후 가람국은 어떤 나라가 됐을까요?';
+    document.getElementById('resultQuestion').textContent =
+      '왜 이렇게 됐을까? 무엇이 있었다면 달라졌을까?\n우리가 선택하지 않은 것은 무엇이었을까?';
+  }
+
+  set(ref(db, 'game/currentScene'), 99);
+  document.getElementById('resultOverlay').classList.add('visible');
+};
+
+// ── 게임 초기화 ───────────────────────────────────────────
+window.resetGame = async function() {
+  if (!confirm('게임을 초기화하면 모든 응답이 삭제됩니다. 계속할까요?')) return;
+  await remove(ref(db, 'game'));
+  await set(ref(db, 'game/currentScene'), 0);
+  await set(ref(db, 'game/revealed'), {});
+  currentScene = 0;
+  totalScores  = { freedom: 0, safety: 0, equal: 0 };
+  scoresRevealed = false;
+  renderScene(0);
+  document.getElementById('responseCount').textContent = '0';
+};
+
+// init()은 인트로 버튼에서 호출
+</script>
+
+
+</body></html>
