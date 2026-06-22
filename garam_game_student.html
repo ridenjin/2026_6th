@@ -1,0 +1,702 @@
+
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>가람국 인생게임</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@400;600;700;900&display=swap');
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0f0f1a;
+    --card: #1a1a2e;
+    --border: #2a2a4a;
+    --accent: #e8b86d;
+    --accent2: #7c6af0;
+    --danger: #e05c5c;
+    --safe: #5cb8e0;
+    --equal: #5ce0a0;
+    --text: #f0ede8;
+    --muted: #8a8aaa;
+  }
+
+  body {
+    font-family: 'Noto Sans KR', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px 16px 40px;
+  }
+
+  /* 게임 진행 중 좌우 2단 래퍼 */
+  .game-wrapper {
+    display: flex;
+    gap: 14px;
+    width: 100%;
+    max-width: 760px;
+    align-items: flex-start;
+  }
+  .game-left {
+    flex: 1;
+    min-width: 0;
+  }
+  .game-right {
+    width: 220px;
+    flex-shrink: 0;
+  }
+
+  /* 헤더 */
+  .header {
+    text-align: center;
+    margin-bottom: 28px;
+  }
+  .header .label {
+    font-size: 11px;
+    letter-spacing: 3px;
+    color: var(--accent);
+    text-transform: uppercase;
+    margin-bottom: 6px;
+  }
+  .header h1 {
+    font-size: 26px;
+    font-weight: 900;
+    line-height: 1.2;
+  }
+  .header h1 span { color: var(--accent); }
+
+  /* 진행 바 */
+  .progress-bar {
+    width: 100%;
+    max-width: 480px;
+    display: flex;
+    gap: 6px;
+    margin-bottom: 28px;
+  }
+  .progress-dot {
+    flex: 1;
+    height: 4px;
+    border-radius: 2px;
+    background: var(--border);
+    transition: background 0.4s;
+  }
+  .progress-dot.done { background: var(--accent); }
+  .progress-dot.active { background: var(--accent2); }
+
+  /* 장면 카드 */
+  .scene-card {
+    width: 100%;
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 24px 20px;
+    margin-bottom: 20px;
+  }
+  .scene-number {
+    font-size: 10px;
+    letter-spacing: 2px;
+    color: var(--accent2);
+    text-transform: uppercase;
+    margin-bottom: 10px;
+  }
+  .scene-title {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 16px;
+    line-height: 1.4;
+  }
+  .scene-story {
+    font-size: 14px;
+    line-height: 1.8;
+    color: #ccc;
+    margin-bottom: 16px;
+  }
+  .speech-bubble {
+    background: #16213e;
+    border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0;
+    padding: 14px 16px;
+    font-size: 14px;
+    line-height: 1.8;
+    color: var(--accent);
+    font-style: italic;
+    margin-bottom: 20px;
+  }
+  .question {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 14px;
+  }
+
+  /* 선택지 버튼 */
+  .choices { display: flex; flex-direction: column; gap: 10px; }
+  .choice-btn {
+    background: #12122a;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 16px 18px;
+    color: var(--text);
+    font-size: 14px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 600;
+    line-height: 1.5;
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .choice-btn:hover { border-color: var(--accent2); background: #1a1a3a; }
+  .choice-btn.selected {
+    border-color: var(--accent);
+    background: #1e1a0a;
+    color: var(--accent);
+  }
+  .choice-btn:disabled { opacity: 0.5; cursor: default; }
+  .choice-label {
+    display: inline-block;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: var(--border);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    text-align: center;
+    line-height: 22px;
+    margin-right: 10px;
+    flex-shrink: 0;
+  }
+  .choice-btn.selected .choice-label {
+    background: var(--accent);
+    color: #000;
+  }
+
+  /* 확인 버튼 */
+  .confirm-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent2);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: none;
+  }
+  .confirm-btn.visible { display: block; }
+  .confirm-btn:hover { background: #9580ff; transform: translateY(-1px); }
+  .confirm-btn:active { transform: translateY(0); }
+
+  /* 대기 상태 표시 (장면카드 위에 오버레이처럼) */
+  .waiting { display: none; }
+  .waiting.visible { display: block; }
+  .waiting-icon { display: none; }
+  .waiting-left { display: none; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ★ 점수 공개 카드 — 오른쪽 패널 */
+  .score-reveal {
+    display: none;
+    background: #12122a;
+    border: 1.5px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 18px 16px;
+    animation: fadeIn 0.5s ease;
+    width: 220px;
+  }
+  .score-reveal.visible { display: block; }
+  @keyframes fadeIn { from{opacity:0;transform:translateX(10px)} to{opacity:1;transform:translateX(0)} }
+  .score-reveal .reveal-title {
+    font-size: 13px; color: #8a8aaa;
+    letter-spacing: 1px; margin-bottom: 14px;
+  }
+  .score-chips { display: flex; flex-direction: column; gap: 10px; }
+  .score-chip-row {
+    display: flex; align-items: center;
+    background: #0f0f1e; border-radius: 10px;
+    padding: 10px 14px; gap: 10px;
+  }
+  .score-chip-icon { font-size: 18px; }
+  .score-chip-name { font-size: 14px; font-weight: 700; flex: 1; }
+  .score-chip-name.freedom { color: #5ce0a0; }
+  .score-chip-name.state  { color: #5cb8e0; }
+  .score-chip-name.equal   { color: #e8b86d; }
+  .score-chip-val {
+    font-size: 16px; font-weight: 900;
+    min-width: 44px; text-align: right;
+  }
+  .score-chip-val.plus  { color: #5ce0a0; }
+  .score-chip-val.minus { color: #e05c5c; }
+  .score-chip-val.zero  { color: #6a6a8a; }
+
+  /* ★ 누적 합계 */
+  .total-scores {
+    margin-top: 14px;
+    background: #0a0a1a;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    padding: 12px 14px;
+  }
+  .total-title {
+    font-size: 11px; letter-spacing: 2px;
+    color: #6a6a8a; margin-bottom: 10px;
+    text-align: center;
+  }
+  .total-row {
+    display: flex; align-items: center;
+    gap: 8px; margin-bottom: 8px;
+  }
+  .total-bar-wrap {
+    flex: 1; height: 6px;
+    background: #1a1a2e; border-radius: 3px; overflow: hidden;
+  }
+  .total-bar { height: 100%; border-radius: 3px; transition: width 0.8s ease; }
+  .total-bar.freedom { background: #5ce0a0; }
+  .total-bar.state  { background: #5cb8e0; }
+  .total-bar.equal   { background: #e8b86d; }
+  .total-name { font-size: 12px; font-weight: 700; width: 50px; }
+  .total-name.freedom { color: #5ce0a0; }
+  .total-name.state  { color: #5cb8e0; }
+  .total-name.equal   { color: #e8b86d; }
+  .total-val { font-size: 13px; font-weight: 900; width: 32px; text-align: right; }
+
+  /* 완료 화면 */
+  .done-screen {
+    text-align: center;
+    padding: 40px 20px;
+    display: none;
+  }
+  .done-screen.visible { display: block; }
+  .done-icon { font-size: 64px; margin-bottom: 20px; }
+  .done-screen h2 { font-size: 22px; font-weight: 900; margin-bottom: 10px; }
+  .done-screen p { color: var(--muted); font-size: 14px; line-height: 1.7; }
+
+  /* 스탯 미니 표시 */
+  .stat-mini {
+    display: flex;
+    gap: 8px;
+    margin-top: 16px;
+    justify-content: center;
+  }
+  .stat-chip {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .stat-chip.freedom { background: rgba(92,224,160,0.15); color: var(--equal); }
+  .stat-chip.state  { background: rgba(92,184,224,0.15); color: var(--safe); }
+  .stat-chip.equal   { background: rgba(232,184,109,0.15); color: var(--accent); }
+
+  /* 이름 입력 */
+  .name-screen {
+    width: 100%;
+    max-width: 480px;
+    text-align: center;
+  }
+  .name-screen h2 { font-size: 22px; font-weight: 900; margin-bottom: 8px; }
+  .name-screen p { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+  .name-input {
+    width: 100%;
+    padding: 16px;
+    background: var(--card);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    color: var(--text);
+    font-size: 18px;
+    font-family: 'Noto Sans KR', sans-serif;
+    text-align: center;
+    margin-bottom: 16px;
+    outline: none;
+  }
+  .name-input:focus { border-color: var(--accent2); }
+  .start-btn {
+    width: 100%;
+    padding: 16px;
+    background: var(--accent);
+    color: #000;
+    border: none;
+    border-radius: 12px;
+    font-size: 16px;
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    cursor: pointer;
+  }
+  .start-btn:disabled { opacity: 0.4; cursor: default; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="label">가람국 인생게임</div>
+  <h1>나는 <span>가람국</span>의 국민</h1>
+</div>
+
+<!-- 이름 입력 화면 -->
+<div class="name-screen" id="nameScreen">
+  <h2>👤 내 이름을 입력하세요</h2>
+  <p>선택 결과가 가람국의 미래를 결정합니다</p>
+  <input class="name-input" id="nameInput" type="text" placeholder="예) 김가람" maxlength="6">
+  <button class="start-btn" id="startBtn" disabled onclick="startGame()">게임 시작</button>
+</div>
+
+<!-- 진행 바 -->
+<div class="progress-bar" id="progressBar" style="display:none">
+  <div class="progress-dot" id="dot0"></div>
+  <div class="progress-dot" id="dot1"></div>
+  <div class="progress-dot" id="dot2"></div>
+  <div class="progress-dot" id="dot3"></div>
+  <div class="progress-dot" id="dot4"></div>
+</div>
+
+<!-- 게임 2단 래퍼 -->
+<div class="game-wrapper" id="gameWrapper" style="display:none">
+  <!-- 왼쪽: 장면 카드 + 선택 버튼 -->
+  <div class="game-left">
+    <div class="scene-card" id="sceneCard"></div>
+    <button class="confirm-btn" id="confirmBtn" onclick="submitChoice()">선택 완료 →</button>
+    <!-- 대기 상태 표시 -->
+    <div class="waiting" id="waitingScreen">
+      <div class="waiting-left"></div>
+    </div>
+  </div>
+  <!-- 오른쪽: 점수 패널 (선생님 공개 후 표시) -->
+  <div class="game-right">
+    <div class="score-reveal" id="scoreReveal">
+      <div class="reveal-title">✨ 이번 장면</div>
+      <div class="score-chips" id="scoreChips"></div>
+      <div class="total-scores" id="totalScores">
+        <div class="total-title">📊 누적 점수</div>
+        <div class="total-row">
+          <span class="total-name freedom">🗽 자유</span>
+          <div class="total-bar-wrap"><div class="total-bar freedom" id="tBarFreedom" style="width:50%"></div></div>
+          <span class="total-val" id="tValFreedom">0</span>
+        </div>
+        <div class="total-row">
+          <span class="total-name state">🏛️ 국가질서</span>
+          <div class="total-bar-wrap"><div class="total-bar state" id="tBarState" style="width:50%"></div></div>
+          <span class="total-val" id="tValState">0</span>
+        </div>
+        <div class="total-row">
+          <span class="total-name equal">⚖️ 평등</span>
+          <div class="total-bar-wrap"><div class="total-bar equal" id="tBarEqual" style="width:50%"></div></div>
+          <span class="total-val" id="tValEqual">0</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 완료 화면 -->
+<div class="done-screen" id="doneScreen">
+  <div class="done-icon">🏛️</div>
+  <h2>가람국에서의 선택이<br>끝났습니다</h2>
+  <p>선생님 화면을 함께 봐요</p>
+  <div class="stat-mini" id="myStats"></div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, push } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyARGsd0fSm2WHTKbzZQ7STlXFxKKIqaUCE",
+  authDomain: "garam-game-69bde.firebaseapp.com",
+  databaseURL: "https://garam-game-69bde-default-rtdb.firebaseio.com",
+  projectId: "garam-game-69bde",
+  storageBucket: "garam-game-69bde.firebasestorage.app",
+  messagingSenderId: "863206321915",
+  appId: "1:863206321915:web:b225f9c25814f8ef5b0a5e"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getDatabase(app);
+
+// ── 게임 데이터 ──────────────────────────────────────────
+const SCENES = [
+  {
+    number: "장면 1", title: "강한의 약속",
+    story: "가람국에 새 지도자 '강한'이 당선됐습니다. 국민 70%의 지지를 받은 인기 있는 지도자예요.",
+    speech: "\"국민 여러분, 지금 가람국은 법을 만드는 곳, 나라 살림, 재판하는 곳이 따로따로라 서로 싸우느라 아무것도 못 하고 있습니다. 나쁜 사람이 잡혀도 기관끼리 책임을 미루다 풀려나요. 제가 직접 다 맡아서 빠르고 확실하게 해결하겠습니다. 저를 믿어주세요.\"",
+    question: "💬 나는 어떻게 반응할까?",
+    choices: [
+      { label: "A", text: "맞아, 빠르고 확실한 게 낫지. 믿어보자.", scores: { freedom: -1, state: 1, equal: 0 } },
+      { label: "B", text: "한 사람이 다 하면 나중에 문제가 생길 것 같아. 반대한다.", scores: { freedom: 1, state: 0, equal: 1 } }
+    ]
+  },
+  {
+    number: "장면 2", title: "질서를 위한 법",
+    story: "가람국에 범죄가 늘어나자 강한이 새 법을 만들었습니다. 그런데 내 친구가 이 법으로 이유도 모른 채 잡혀갔습니다.",
+    speech: "\"국민 여러분의 안전을 위해, 수상한 사람은 재판 없이 먼저 잡아둘 수 있는 법을 만들었습니다. 억울한 사람은 나중에 풀어드리면 됩니다. 나쁜 사람을 빨리 잡는 게 먼저 아닐까요?\"",
+    question: "💬 나는 어떻게 할까?",
+    choices: [
+      { label: "A", text: "나쁜 사람을 잡으려면 어쩔 수 없지. 나라 질서가 먼저야.", scores: { freedom: -1, state: 1, equal: -1 } },
+      { label: "B", text: "재판도 없이 잡아두는 건 말이 안 돼. 항의한다.", scores: { freedom: 1, state: -1, equal: 1 } }
+    ]
+  },
+  {
+    number: "장면 3", title: "재판을 받으러 갔다",
+    story: "항의했더니 오히려 나에게 벌금 고지서가 날아왔습니다. 재판을 신청했습니다.",
+    speech: "\"저도 강한 지도자가 임명했습니다. 강한 지도자는 국민 70%가 뽑은 분입니다. 그분의 판단이 곧 국민의 뜻 아닐까요? 벌금을 내세요.\"",
+    question: "💬 이 재판을 받아들일까?",
+    choices: [
+      { label: "A", text: "판사가 지도자 편이면 공정한 재판이 아니야. 계속 싸운다.", scores: { freedom: 1, state: -1, equal: 1 } },
+      { label: "B", text: "70%가 뽑은 지도자의 뜻이니 나라 질서를 따르겠다. 벌금을 낸다.", scores: { freedom: -1, state: 1, equal: -1 } }
+    ]
+  },
+  {
+    number: "장면 4", title: "강한의 호소",
+    story: "가람국 경제가 어려워졌습니다. 강한이 방송에 나와 말합니다.",
+    speech: "\"국민 여러분, 지금 가람국이 어려운 건 저를 반대하는 세력들이 발목을 잡기 때문입니다. 저를 믿고 조금만 더 참아주세요. 비판하는 목소리가 클수록 가람국은 더 힘들어집니다.\"",
+    question: "💬 나는 어떻게 생각할까?",
+    choices: [
+      { label: "A", text: "맞아, 지금은 나라가 하나로 뭉쳐야 할 때야. 비판을 멈춘다.", scores: { freedom: -1, state: 1, equal: -1 } },
+      { label: "B", text: "어려울수록 비판의 목소리가 필요해. 계속 말한다.", scores: { freedom: 1, state: -1, equal: 0 } },
+      { label: "C", text: "모르겠다. 일단 지켜본다.", scores: { freedom: 0, state: 0, equal: 0 } }
+    ]
+  },
+  {
+    number: "장면 5", title: "광장에 모인 국민들",
+    story: "말 한마디 잘못했다가 잡혀간 이웃, 이유도 모른 채 내야 하는 세금, 항의해도 바뀌는 게 없는 나날들... 드디어 많은 국민들이 광장에 모였습니다.",
+    speech: "\"여러분의 마음 압니다. 저도 답답합니다. 하지만 지금 이 문제들, 제가 다 해결할 수 있습니다. 조금만 더 믿어주세요. 대신 저에게 더 많은 권한을 주세요. 그러면 가람국을 반드시 바로잡겠습니다.\"",
+    question: "💬 나는 어떻게 할까?",
+    choices: [
+      { label: "A", text: "더 많은 권한을 주면 오히려 더 위험해져. 광장에 남는다.", scores: { freedom: 1, state: -1, equal: 1 } },
+      { label: "B", text: "지금 나라가 혼란스러우니 강한에게 권한을 주는 게 맞다.", scores: { freedom: -1, state: 1, equal: -1 } },
+      { label: "C", text: "광장엔 못 가지만 주변 사람들에게 조용히 알린다.", scores: { freedom: 1, state: 0, equal: 0 } }
+    ]
+  }
+];
+
+// ── 상태 ────────────────────────────────────────────────
+let studentName = "";
+let currentScene = 0;
+let selectedChoice = null;
+let myScores = { freedom: 0, state: 0, equal: 0 };
+let gamePhase = 0; // Firebase에서 받아오는 현재 장면 번호
+
+// ── 이름 입력 ────────────────────────────────────────────
+const nameInput = document.getElementById('nameInput');
+nameInput.addEventListener('input', () => {
+  document.getElementById('startBtn').disabled = nameInput.value.trim().length === 0;
+});
+
+window.startGame = async function() {
+  studentName = nameInput.value.trim();
+  document.getElementById('nameScreen').style.display = 'none';
+  document.getElementById('progressBar').style.display = 'flex';
+  document.getElementById('gameWrapper').style.display = 'flex';
+
+  // ★ Firebase에서 내 누적 점수 복구 (새로고침 대비)
+  try {
+    const snap = await get(ref(db, `game/myScores/${studentName}`));
+    const savedScores = snap.val();
+    if (savedScores) {
+      myScores.freedom = savedScores.freedom || 0;
+      myScores.state  = savedScores.state  || 0;
+      myScores.equal   = savedScores.equal   || 0;
+    }
+  } catch(e) {}
+
+  let initialized = false;
+
+  // Firebase 장면 번호 감지
+  onValue(ref(db, 'game/currentScene'), (snap) => {
+    const serverScene = snap.val() ?? 0;
+    gamePhase = serverScene;
+
+    if (serverScene >= SCENES.length) {
+      showDone();
+      return;
+    }
+
+    if (!initialized) {
+      // 최초 진입 시 한 번만 렌더링
+      initialized = true;
+      currentScene = serverScene;
+      renderScene(currentScene);
+      return;
+    }
+
+    if (serverScene > currentScene) {
+      // 선생님이 다음 장면으로 넘겼을 때만 렌더링
+      currentScene = serverScene;
+      selectedChoice = null;
+      window._lastScores = null;
+      document.getElementById('scoreReveal').classList.remove('visible');
+      hideWaiting();
+      renderScene(currentScene);
+    }
+    // serverScene === currentScene 이면 아무것도 안 함 (재렌더링 방지)
+  });
+
+  // ★ 선생님 결과 공개 감지
+  onValue(ref(db, 'game/revealed'), (snap) => {
+    const revealed = snap.val() || {};
+    const key = `scene${currentScene}`;
+    if (revealed[key] === true) {
+      showMyScores();
+    }
+  });
+};
+
+// ── 장면 렌더링 ──────────────────────────────────────────
+function renderScene(idx) {
+  const s = SCENES[idx];
+  updateProgress(idx);
+
+  const card = document.getElementById('sceneCard');
+  card.innerHTML = `
+    <div class="scene-number">${s.number} / 5</div>
+    <div class="scene-title">${s.title}</div>
+    <div class="scene-story">${s.story}</div>
+    <div class="speech-bubble">${s.speech}</div>
+    <div class="question">${s.question}</div>
+    <div class="choices" id="choiceList"></div>
+  `;
+
+  const list = document.getElementById('choiceList');
+  s.choices.forEach((c, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.innerHTML = `<span class="choice-label">${c.label}</span>${c.text}`;
+    btn.onclick = () => selectChoice(i);
+    list.appendChild(btn);
+  });
+
+  const cb = document.getElementById('confirmBtn');
+  cb.classList.remove('visible');
+  cb.style.display = '';  // style.display 강제 리셋
+  selectedChoice = null;
+}
+
+function selectChoice(i) {
+  const btns = document.querySelectorAll('.choice-btn');
+  btns.forEach(b => b.classList.remove('selected'));
+  btns[i].classList.add('selected');
+  selectedChoice = i;
+  document.getElementById('confirmBtn').classList.add('visible');
+}
+
+// ── 선택 제출 ────────────────────────────────────────────
+window.submitChoice = async function() {
+  if (selectedChoice === null) return;
+  const scene = SCENES[currentScene];
+  const scores = scene.choices[selectedChoice].scores;
+
+  // 내 누적 점수
+  myScores.freedom += scores.freedom;
+  myScores.state  += scores.state;
+  myScores.equal   += scores.equal;
+  // ★ 이번 장면 점수 임시 저장 (공개용)
+  window._lastScores = scores;
+
+  // Firebase에 기록
+  await push(ref(db, `game/responses/scene${currentScene}`), {
+    name: studentName,
+    choice: scene.choices[selectedChoice].label,
+    freedom: scores.freedom,
+    safety: scores.state,
+    equal: scores.equal,
+    timestamp: Date.now()
+  });
+
+  // ★ 개인 누적 점수도 Firebase에 저장 (새로고침 대비)
+  await set(ref(db, `game/myScores/${studentName}`), {
+    freedom: myScores.freedom,
+    safety:  myScores.state,
+    equal:   myScores.equal
+  });
+
+  // 버튼 비활성화
+  document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+  document.getElementById('confirmBtn').classList.remove('visible');
+  showWaiting();
+};
+
+function showWaiting() {
+  // 장면카드는 그대로, 선택지만 비활성화 상태 유지
+  document.getElementById('waitingScreen').classList.add('visible');
+}
+function hideWaiting() {
+  document.getElementById('waitingScreen').classList.remove('visible');
+  document.getElementById('scoreReveal').classList.remove('visible');
+}
+
+function updateProgress(idx) {
+  for (let i = 0; i < 5; i++) {
+    const dot = document.getElementById(`dot${i}`);
+    dot.className = 'progress-dot' + (i < idx ? ' done' : i === idx ? ' active' : '');
+  }
+}
+
+// ★ 선생님이 공개 버튼 누르면 내 점수 표시
+function showMyScores() {
+  const scores = window._lastScores;
+  if (!scores) return;
+  const reveal = document.getElementById('scoreReveal');
+  if (reveal.classList.contains('visible')) return; // 이미 표시됨
+  
+  const chips = document.getElementById('scoreChips');
+  chips.innerHTML = [
+    { icon: '🗽', name: '자유', key: 'freedom', cls: 'freedom' },
+    { icon: '🏛️', name: '안전', key: 'state',  cls: 'state'  },
+    { icon: '⚖️', name: '평등', key: 'equal',   cls: 'equal'   }
+  ].map(item => {
+    const val = scores[item.key];
+    const sign = val > 0 ? '+' : '';
+    const valCls = val > 0 ? 'plus' : val < 0 ? 'minus' : 'zero';
+    return `
+      <div class="score-chip-row">
+        <span class="score-chip-icon">${item.icon}</span>
+        <span class="score-chip-name ${item.cls}">${item.name}</span>
+        <span class="score-chip-val ${valCls}">${sign}${val}</span>
+      </div>`;
+  }).join('');
+  
+  reveal.classList.add('visible');
+
+  // ★ 누적 합계 업데이트
+  const f = myScores.freedom;
+  const sa = myScores.state;
+  const e = myScores.equal;
+  const max = Math.max(Math.abs(f), Math.abs(sa), Math.abs(e), 1);
+
+  document.getElementById('tValFreedom').textContent = (f > 0 ? '+' : '') + f;
+  document.getElementById('tValState').textContent  = (sa > 0 ? '+' : '') + sa;
+  document.getElementById('tValEqual').textContent   = (e > 0 ? '+' : '') + e;
+
+  document.getElementById('tBarFreedom').style.width = Math.max(5, 50 + f  / max * 45) + '%';
+  document.getElementById('tBarState').style.width  = Math.max(5, 50 + sa / max * 45) + '%';
+  document.getElementById('tBarEqual').style.width   = Math.max(5, 50 + e  / max * 45) + '%';
+}
+
+function showDone() {
+  document.getElementById('sceneCard').style.display = 'none';
+  document.getElementById('confirmBtn').style.display = 'none';
+  document.getElementById('waitingScreen').classList.remove('visible');
+  document.getElementById('progressBar').style.display = 'none';
+
+  document.getElementById('gameWrapper').style.display = 'none';
+  document.getElementById('progressBar').style.display = 'none';
+  const done = document.getElementById('doneScreen');
+  done.classList.add('visible');
+
+  document.getElementById('myStats').innerHTML = `
+    <span class="stat-chip freedom">🗽 자유 ${myScores.freedom > 0 ? '+' : ''}${myScores.freedom}</span>
+    <span class="stat-chip safety">🏛️ 국가질서 ${myScores.state > 0 ? '+' : ''}${myScores.state}</span>
+    <span class="stat-chip equal">⚖️ 평등 ${myScores.equal > 0 ? '+' : ''}${myScores.equal}</span>
+  `;
+}
+</script>
+</body>
+</html>
